@@ -18,15 +18,13 @@ config({ override: false });
 db.initialize();
 
 const PORT = process.env.PORT || 3001;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 
-// Debug: log environment variable status
-console.log('Environment check:', {
-  NODE_ENV: process.env.NODE_ENV,
-  PORT: process.env.PORT,
-  CORS_ORIGIN_RAW: process.env.CORS_ORIGIN,
-  CORS_ORIGIN_USED: CORS_ORIGIN
-});
+// Use production URL if NODE_ENV is production, otherwise use env var or localhost
+const CORS_ORIGIN = process.env.NODE_ENV === 'production'
+  ? (process.env.CORS_ORIGIN || 'https://slothgambol.xyz')
+  : (process.env.CORS_ORIGIN || 'http://localhost:3000');
+
+console.log('CORS Origin:', CORS_ORIGIN);
 
 // Create HTTP server
 const httpServer = createServer((req, res) => {
