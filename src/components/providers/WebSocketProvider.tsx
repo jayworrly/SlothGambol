@@ -421,8 +421,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     socket.on("game:hand-result", (result) => {
+      console.log("[WebSocket] game:hand-result received:", result);
       gameStore.setPhase("showdown");
-      console.log("Hand result:", result);
     });
 
     socket.on("player:joined", (player) => {

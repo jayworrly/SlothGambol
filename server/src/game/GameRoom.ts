@@ -722,6 +722,7 @@ export class GameRoom {
   }
 
   private showdown(): void {
+    console.log('[showdown] Starting showdown...');
     const playersInHand = this.getActivePlayersInHand();
 
     // Calculate hand rankings
@@ -729,10 +730,12 @@ export class GameRoom {
     for (const player of playersInHand) {
       const hand = findBestHand(player.cards, this.state.communityCards);
       handRankings.set(player.id, hand);
+      console.log(`[showdown] Player ${player.username}: ${hand.rank} - ${hand.description}`);
     }
 
     // Determine winners and distribute pot
     const result = this.distributeWinnings(playersInHand, handRankings);
+    console.log(`[showdown] Winners: ${result.winners.map(w => w.playerId).join(', ')}`);
 
     // Broadcast result
     this.io.to(this.state.tableId).emit('game:hand-result', {
@@ -753,11 +756,16 @@ export class GameRoom {
 
     // Schedule next hand
     this.state.phase = 'finished';
-    setTimeout(() => this.startNewHand(), 5000);
+    console.log('[showdown] Scheduling next hand in 5 seconds...');
+    setTimeout(() => {
+      console.log('[showdown] Timer fired, starting new hand');
+      this.startNewHand();
+    }, 5000);
   }
 
   private endHandSingleWinner(): void {
     const winner = this.getActivePlayersInHand()[0];
+    console.log(`[endHandSingleWinner] Winner: ${winner.username}, pot: ${this.state.pot}`);
     winner.chips += this.state.pot;
 
     this.io.to(this.state.tableId).emit('game:hand-result', {
@@ -774,7 +782,11 @@ export class GameRoom {
     });
 
     this.state.phase = 'finished';
-    setTimeout(() => this.startNewHand(), 3000);
+    console.log('[endHandSingleWinner] Scheduling next hand in 3 seconds...');
+    setTimeout(() => {
+      console.log('[endHandSingleWinner] Timer fired, starting new hand');
+      this.startNewHand();
+    }, 3000);
   }
 
   private distributeWinnings(
