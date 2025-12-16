@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useCallback,
+  useMemo,
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAccount } from "wagmi";
@@ -251,8 +252,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const socketRef = useRef<TypedSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const playerIdRef = useRef<string | null>(null); // Ref to avoid reconnection loops
   const { address, isConnected: isWalletConnected } = useAccount();
   const gameStore = useGameStore();
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    playerIdRef.current = playerId;
+  }, [playerId]);
 
   // Initialize socket connection
   useEffect(() => {
@@ -412,8 +419,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     socket.on("mental-poker:shuffle-turn", (data) => {
       console.log(`Shuffle turn for player ${data.playerId}`);
       gameStore.setEncryptedDeck(data.encryptedDeck);
-      // Check if it's my turn to shuffle
-      if (data.playerId === playerId) {
+      // Check if it's my turn to shuffle (use ref to get current value)
+      if (data.playerId === playerIdRef.current) {
         gameStore.setIsMyShuffleTurn(true);
       }
     });
@@ -448,7 +455,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     return () => {
       socket.disconnect();
     };
-  }, [isWalletConnected, address, playerId]);
+  }, [isWalletConnected, address]); // Removed playerId to prevent reconnection loops
 
   // Action handlers
   const joinTable = useCallback(
