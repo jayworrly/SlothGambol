@@ -393,7 +393,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       console.log("[WebSocket] game:turn received:", {
         playerId: data.playerId,
         seatNumber: data.seatNumber,
-        myPosition: gameStore.getState().myPosition,
+        myPosition: useGameStore.getState().myPosition,
         availableActions: data.availableActions
       });
       // Set whose turn it is
