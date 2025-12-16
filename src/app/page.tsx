@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
 import { Header } from "@/components/ui/Header";
 
@@ -13,13 +14,13 @@ export default function Home() {
       {/* Ambient background effects */}
       <div className="pointer-events-none absolute inset-0">
         {/* Radial glow from center */}
-        <div className="absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500/10 blur-[150px]" />
+        <div className="absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/10 blur-[150px]" />
 
         {/* Felt green glow at bottom */}
-        <div className="absolute bottom-0 left-1/2 h-[400px] w-[1200px] -translate-x-1/2 rounded-full bg-emerald-600/10 blur-[100px]" />
+        <div className="absolute bottom-0 left-1/2 h-[400px] w-[1200px] -translate-x-1/2 rounded-full bg-violet-600/10 blur-[100px]" />
 
         {/* Top accent */}
-        <div className="absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
+        <div className="absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
       </div>
 
       {/* Floating Cards Background */}
@@ -28,35 +29,40 @@ export default function Home() {
       {/* Hero Section */}
       <main className="relative z-10 flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-6">
         <div className="mx-auto max-w-5xl text-center">
+          {/* Logo */}
+          <div className="mb-8 flex justify-center">
+            <Image
+              src="/SlothLabsIcon.png"
+              alt="SlothGambol"
+              width={150}
+              height={150}
+              className="rounded-3xl shadow-2xl shadow-purple-500/20"
+            />
+          </div>
+
           {/* Badge */}
           <div className="glass mb-8 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm">
             <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-            <span className="text-foreground/80">
-              Live on Avalanche C-Chain
-            </span>
-            <span className="text-avalanche-red font-semibold">•</span>
-            <span className="text-foreground/70">Provably Fair</span>
+            <span className="text-white/80">Live on Avalanche</span>
+            <span className="text-purple-400 font-semibold">•</span>
+            <span className="text-white/70">Provably Fair</span>
           </div>
 
           {/* Main Headline */}
           <h1 className="mb-6 text-5xl font-black tracking-tight sm:text-7xl lg:text-8xl">
-            <span className="text-primary-text mb-2 block">THE FUTURE OF</span>
-            <span className="text-avalanche-red block">
-              ONLINE POKER
-            </span>
+            <span className="text-white mb-2 block">SLOW HANDS.</span>
+            <span className="text-purple-400 block">BIG WINS.</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-foreground/70 mx-auto mb-4 max-w-3xl text-xl leading-relaxed sm:text-2xl">
-            Trustless gameplay powered by{" "}
-            <span className="text-primary-text font-semibold">
-              Mental Poker cryptography
+          <p className="text-white/70 mx-auto mb-4 max-w-3xl text-xl leading-relaxed sm:text-2xl">
+            The chillest poker room on the blockchain.{" "}
+            <span className="text-purple-300 font-semibold">
+              Trustless. Transparent. Take your time.
             </span>
-            .
           </p>
-          <p className="text-foreground/60 mx-auto mb-12 max-w-2xl text-lg">
-            No house edge. No middlemen. Just pure, verifiable poker where your
-            cards are encrypted by every player at the table.
+          <p className="text-white/60 mx-auto mb-12 max-w-2xl text-lg">
+            No rush, no house edge. Just pure, verifiable poker powered by Mental Poker cryptography.
           </p>
 
           {/* CTA Buttons */}
@@ -65,7 +71,7 @@ export default function Home() {
               <>
                 <Link
                   href="/lobby"
-                  className="group from-avalanche-red to-avalanche-red/80 hover:shadow-avalanche-red/30 btn-shine relative rounded-xl bg-gradient-to-r px-10 py-5 text-lg font-bold transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                  className="group from-purple-500 to-purple-500/80 hover:shadow-purple-500/30 btn-shine relative rounded-xl bg-gradient-to-r px-10 py-5 text-lg font-bold transition-all duration-300 hover:scale-105 hover:shadow-2xl"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-3">
                     <svg
@@ -109,7 +115,7 @@ export default function Home() {
                   <button
                     onClick={login}
                     disabled={!ready}
-                    className="rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-8 py-4 font-semibold text-white shadow-lg transition-all hover:from-red-500 hover:to-red-400 hover:shadow-red-500/25 disabled:opacity-50"
+                    className="rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 px-8 py-4 font-semibold text-white shadow-lg transition-all hover:from-purple-500 hover:to-violet-400 hover:shadow-purple-500/25 disabled:opacity-50"
                   >
                     Connect Wallet
                   </button>
@@ -133,11 +139,11 @@ export default function Home() {
           <div className="mb-16 text-center">
             <h2 className="text-primary-text mb-4 text-3xl font-bold sm:text-4xl">
               Why Players Choose{" "}
-              <span className="text-avalanche-red">Avalanche Poker</span>
+              <span className="text-purple-400">SlothGambol</span>
             </h2>
             <p className="text-foreground/60 mx-auto max-w-2xl">
-              Experience poker as it should be—transparent, fast, and truly
-              decentralized.
+              Slow down and play smarter. No rush, no house edge—just pure,
+              trustless poker on Avalanche.
             </p>
           </div>
 
@@ -146,19 +152,19 @@ export default function Home() {
               icon={<CryptoLockIcon />}
               title="Mental Poker Protocol"
               description="Every card is encrypted by all players using commutative cryptography. No one—not even the server—can see cards they shouldn't."
-              gradient="from-avalanche-red/20 to-avalanche-red/40"
+              gradient="from-purple-500/20 to-purple-500/40"
             />
             <FeatureCard
               icon={<AvalancheIcon />}
               title="Avalanche Powered"
               description="Sub-second finality means instant bet confirmations. Transactions settle in under 2 seconds with minimal gas fees."
-              gradient="from-avalanche-red/20 to-gold/20"
+              gradient="from-purple-500/20 to-gold/20"
             />
             <FeatureCard
               icon={<ShieldIcon />}
               title="Non-Custodial"
               description="Your funds stay in smart contracts you control. Withdraw anytime. No KYC. No withdrawal limits. Your keys, your chips."
-              gradient="from-felt-green/20 to-felt-dark/40"
+              gradient="from-violet-500/20 to-purple-900/40"
             />
           </div>
         </div>
@@ -170,37 +176,37 @@ export default function Home() {
           <div className="grid gap-8 lg:grid-cols-2">
             {/* Cash Games */}
             <div className="group relative overflow-hidden rounded-3xl">
-              <div className="from-felt-green/20 to-felt-dark/40 absolute inset-0 bg-gradient-to-br" />
+              <div className="from-purple-600/20 to-violet-900/40 absolute inset-0 bg-gradient-to-br" />
               <div className="absolute inset-0 opacity-30">
                 <div className="absolute top-8 right-8 opacity-50">
                   <ChipStack />
                 </div>
               </div>
               <div className="relative p-10">
-                <div className="mb-3 text-sm font-semibold tracking-wider text-green-400">
+                <div className="mb-3 text-sm font-semibold tracking-wider text-purple-400">
                   CASH GAMES
                 </div>
                 <h3 className="text-primary-text mb-4 text-3xl font-bold">
-                  Play Anytime, Leave Anytime
+                  Take Your Time, Stack Your Chips
                 </h3>
                 <p className="text-foreground/70 mb-6 leading-relaxed">
                   Join tables with stakes from micro to high roller. Your chips
                   are always liquid—withdraw to your wallet whenever you want.
                 </p>
                 <div className="mb-8 flex flex-wrap gap-3">
-                  <span className="rounded-full bg-green-500/20 px-3 py-1 text-sm text-green-400">
+                  <span className="rounded-full bg-purple-500/20 px-3 py-1 text-sm text-purple-400">
                     Texas Hold&apos;em
                   </span>
-                  <span className="rounded-full bg-green-500/20 px-3 py-1 text-sm text-green-400">
+                  <span className="rounded-full bg-purple-500/20 px-3 py-1 text-sm text-purple-400">
                     Omaha
                   </span>
-                  <span className="rounded-full bg-green-500/20 px-3 py-1 text-sm text-green-400">
+                  <span className="rounded-full bg-purple-500/20 px-3 py-1 text-sm text-purple-400">
                     2-9 Players
                   </span>
                 </div>
                 <Link
                   href="/lobby"
-                  className="inline-flex items-center gap-2 font-semibold text-green-400 transition-colors hover:text-green-300"
+                  className="inline-flex items-center gap-2 font-semibold text-purple-400 transition-colors hover:text-purple-300"
                 >
                   Find a Table
                   <svg
@@ -280,16 +286,16 @@ export default function Home() {
       <section className="relative z-10 px-6 py-32">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-primary-text mb-6 text-4xl font-black sm:text-5xl">
-            Ready to <span className="text-avalanche-red text-glow">Play?</span>
+            Ready to <span className="text-purple-400">Hang?</span>
           </h2>
           <p className="text-foreground/70 mb-10 text-xl">
-            Join thousands of players already experiencing the future of online
-            poker.
+            No rush. Kick back and play at your own pace with the chillest
+            poker community on chain.
           </p>
           {authenticated ? (
             <Link
               href="/lobby"
-              className="from-avalanche-red to-avalanche-red/80 hover:shadow-avalanche-red/30 btn-shine inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              className="from-purple-500 to-purple-500/80 hover:shadow-purple-500/30 btn-shine inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             >
               TAKE YOUR SEAT
               <svg
@@ -310,7 +316,7 @@ export default function Home() {
             <button
               onClick={login}
               disabled={!ready}
-              className="rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-8 py-4 font-semibold text-white shadow-lg transition-all hover:from-red-500 hover:to-red-400 hover:shadow-red-500/25 disabled:opacity-50"
+              className="rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 px-8 py-4 font-semibold text-white shadow-lg transition-all hover:from-purple-500 hover:to-violet-400 hover:shadow-purple-500/25 disabled:opacity-50"
             >
               Connect Wallet
             </button>
@@ -319,28 +325,32 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-secondary-accent/50 relative z-10 border-t px-6 py-12">
+      <footer className="border-purple-500/20 relative z-10 border-t px-6 py-12">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             <div className="flex items-center gap-3">
-              <div className="from-avalanche-red to-avalanche-red/80 text-primary-text shadow-avalanche-red/20 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br font-bold shadow-lg">
-                A
-              </div>
+              <Image
+                src="/SlothLabsIcon.png"
+                alt="SlothGambol"
+                width={32}
+                height={32}
+                className="rounded-lg"
+              />
               <span className="text-foreground/60 text-sm">
-                Built on Avalanche • Powered by Mental Poker Cryptography
+                SlothGambol • Built on Avalanche • Powered by Mental Poker
               </span>
             </div>
             <div className="text-foreground/60 flex items-center gap-8 text-sm">
-              <a href="#" className="hover:text-primary-text transition-colors">
+              <a href="#" className="hover:text-purple-400 transition-colors">
                 Docs
               </a>
-              <a href="#" className="hover:text-primary-text transition-colors">
+              <a href="#" className="hover:text-purple-400 transition-colors">
                 GitHub
               </a>
-              <a href="#" className="hover:text-primary-text transition-colors">
+              <a href="#" className="hover:text-purple-400 transition-colors">
                 Discord
               </a>
-              <a href="#" className="hover:text-primary-text transition-colors">
+              <a href="#" className="hover:text-purple-400 transition-colors">
                 Twitter
               </a>
             </div>
@@ -432,7 +442,7 @@ function FeatureCard({
     >
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       <div className="relative">
-        <div className="text-avalanche-red mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-black/30">
+        <div className="text-purple-500 mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-black/30">
           {icon}
         </div>
         <h3 className="text-primary-text mb-3 text-xl font-bold">{title}</h3>
@@ -449,7 +459,7 @@ function ChipStack() {
       {[0, 1, 2, 3, 4].map((i) => (
         <div
           key={i}
-          className={`poker-chip ${i % 3 === 0 ? "chip-red" : i % 3 === 1 ? "chip-black" : "chip-gold"} -mt-8 first:mt-0`}
+          className={`poker-chip ${i % 3 === 0 ? "chip-purple" : i % 3 === 1 ? "chip-black" : "chip-gold"} -mt-8 first:mt-0`}
           style={{
             transform: `translateX(${(i % 2) * 3}px)`,
             animationDelay: `${i * 0.1}s`,
