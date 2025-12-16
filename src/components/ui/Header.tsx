@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAccount } from "wagmi";
-import { PokerChipIcon } from "./PokerChipIcon";
 import { shortenAddress } from "@/lib/utils";
 
 export function Header() {
   const { login, logout, ready, authenticated, user } = usePrivy();
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
 
   const displayAddress = address || user?.wallet?.address;
 
@@ -17,12 +17,15 @@ export function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2">
-            <PokerChipIcon className="text-gold h-8 w-8" />
-            <span
-              className="from-gold to-gold-dark bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent"
-              style={{ textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}
-            >
-              Avalanche Poker
+            <Image
+              src="/SlothLabsIcon.png"
+              alt="SlothGambol"
+              width={40}
+              height={40}
+              className="rounded-lg"
+            />
+            <span className="text-xl font-bold text-white">
+              SlothGambol
             </span>
           </Link>
 
