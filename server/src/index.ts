@@ -10,14 +10,23 @@ import type {
 import { registerHandlers, initializeDefaultTables, getTableList } from './socket/handlers.js';
 import { db } from './database/supabase.js';
 
-// Load environment variables
-config();
+// Load environment variables from .env file (only in development)
+// Railway injects env vars directly, so we use override: false to not overwrite them
+config({ override: false });
 
 // Initialize database
 db.initialize();
 
 const PORT = process.env.PORT || 3001;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
+
+// Debug: log environment variable status
+console.log('Environment check:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  CORS_ORIGIN_RAW: process.env.CORS_ORIGIN,
+  CORS_ORIGIN_USED: CORS_ORIGIN
+});
 
 // Create HTTP server
 const httpServer = createServer((req, res) => {
