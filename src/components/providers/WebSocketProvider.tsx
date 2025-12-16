@@ -263,6 +263,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize socket connection
   useEffect(() => {
+    console.log('[WebSocket] Effect running - v2'); // Version marker
+
     if (!isWalletConnected || !address) {
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -279,8 +281,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     socketRef.current = io(wsUrl, {
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      transports: ['websocket'], // Force WebSocket, skip polling
       auth: {
         walletAddress: address,
         username: `Player_${address.slice(2, 8)}`,
@@ -290,15 +294,19 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     const socket = socketRef.current;
 
     socket.on("connect", () => {
-      console.log("WebSocket connected");
+      console.log("[WebSocket] Connected, id:", socket.id);
       setIsConnected(true);
       gameStore.setConnected(true);
     });
 
-    socket.on("disconnect", () => {
-      console.log("WebSocket disconnected");
+    socket.on("disconnect", (reason) => {
+      console.log("[WebSocket] Disconnected, reason:", reason);
       setIsConnected(false);
       gameStore.setConnected(false);
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("[WebSocket] Connection error:", error.message);
     });
 
     socket.on("error", (data) => {
