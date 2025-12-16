@@ -255,12 +255,20 @@ export class GameRoom {
 
   private startNewHand(): void {
     console.log('[startNewHand] Starting new hand...');
+    console.log(`[startNewHand] Current phase: ${this.state.phase}`);
+
     const activePlayers = this.getActivePlayers();
-    console.log(`[startNewHand] Active players: ${activePlayers.length}`);
+    console.log(`[startNewHand] Active players: ${activePlayers.length}, minPlayers: ${this.state.config.minPlayers}`);
+
+    // Log all players and their chip counts
+    for (const player of this.state.players.values()) {
+      console.log(`[startNewHand] Player ${player.username}: chips=${player.chips}, isActive=${player.isActive}`);
+    }
 
     if (activePlayers.length < this.state.config.minPlayers) {
-      console.log('[startNewHand] Not enough players, setting phase to waiting');
+      console.log('[startNewHand] Not enough players with chips, setting phase to waiting');
       this.state.phase = 'waiting';
+      this.broadcastState();
       return;
     }
 
@@ -764,6 +772,10 @@ export class GameRoom {
 
     // Schedule next hand
     this.state.phase = 'finished';
+
+    // Broadcast the updated state so clients know hand is finished
+    this.broadcastState();
+
     console.log('[showdown] Scheduling next hand in 5 seconds...');
     setTimeout(() => {
       console.log('[showdown] Timer fired, starting new hand');
@@ -790,6 +802,10 @@ export class GameRoom {
     });
 
     this.state.phase = 'finished';
+
+    // Broadcast the updated state so clients know hand is finished
+    this.broadcastState();
+
     console.log('[endHandSingleWinner] Scheduling next hand in 3 seconds...');
     setTimeout(() => {
       console.log('[endHandSingleWinner] Timer fired, starting new hand');

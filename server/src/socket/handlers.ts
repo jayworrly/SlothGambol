@@ -14,6 +14,8 @@ type PokerSocket = Socket<ClientToServerEvents, ServerToClientEvents, object, So
 // In-memory storage (replace with Redis in production)
 const gameRooms = new Map<string, GameRoom>();
 const playerToRoom = new Map<string, string>();
+// Track sockets by wallet address to prevent duplicates
+const walletToSocket = new Map<string, PokerSocket>();
 
 // Default tables for testing
 const defaultTables: TableConfig[] = [
@@ -67,7 +69,18 @@ export function initializeDefaultTables(io: PokerServer): void {
 }
 
 export function registerHandlers(io: PokerServer, socket: PokerSocket): void {
-  console.log(`Client connected: ${socket.id}`);
+  const walletAddress = socket.handshake.auth.walletAddress || 'unknown';
+  console.log(`Client connected: ${socket.id}, wallet: ${walletAddress?.slice(0, 10)}`);
+
+  // Prevent duplicate connections from the same wallet
+  if (walletAddress !== 'unknown') {
+    const existingSocket = walletToSocket.get(walletAddress.toLowerCase());
+    if (existingSocket && existingSocket.id !== socket.id) {
+      console.log(`[Duplicate] Disconnecting old socket ${existingSocket.id} for wallet ${walletAddress.slice(0, 10)}`);
+      existingSocket.disconnect(true);
+    }
+    walletToSocket.set(walletAddress.toLowerCase(), socket);
+  }
 
   // Handle table join
   socket.on('table:join', (data, callback) => {
@@ -367,7 +380,16 @@ export function registerHandlers(io: PokerServer, socket: PokerSocket): void {
 
   // Handle disconnect
   socket.on('disconnect', () => {
-    console.log(`Client disconnected: ${socket.id}`);
+    console.log(`Client disconnected: ${socket.id}, wallet: ${walletAddress?.slice(0, 10)}`);
+
+    // Clean up wallet tracking - only if this is the current socket for the wallet
+    if (walletAddress !== 'unknown') {
+      const currentSocket = walletToSocket.get(walletAddress.toLowerCase());
+      if (currentSocket?.id === socket.id) {
+        walletToSocket.delete(walletAddress.toLowerCase());
+        console.log(`[Cleanup] Removed wallet ${walletAddress.slice(0, 10)} from tracking`);
+      }
+    }
 
     const { tableId, playerId } = socket.data;
     if (tableId && playerId) {
