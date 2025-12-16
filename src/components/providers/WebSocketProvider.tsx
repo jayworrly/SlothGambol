@@ -263,16 +263,24 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize socket connection
   useEffect(() => {
-    console.log('[WebSocket] Effect running - v2'); // Version marker
+    console.log('[WebSocket] Effect running - v3', { isWalletConnected, address: address?.slice(0, 10) }); // Version marker
 
     if (!isWalletConnected || !address) {
+      console.log('[WebSocket] No wallet connected, cleaning up');
       if (socketRef.current) {
+        console.log('[WebSocket] Disconnecting existing socket due to wallet disconnect');
         socketRef.current.disconnect();
         socketRef.current = null;
         setIsConnected(false);
         setPlayerId(null);
         gameStore.setConnected(false);
       }
+      return;
+    }
+
+    // Prevent duplicate connections
+    if (socketRef.current?.connected) {
+      console.log('[WebSocket] Socket already connected, skipping');
       return;
     }
 
@@ -461,6 +469,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      console.log('[WebSocket] Cleanup running - disconnecting socket');
       socket.disconnect();
     };
   }, [isWalletConnected, address]); // Removed playerId to prevent reconnection loops
