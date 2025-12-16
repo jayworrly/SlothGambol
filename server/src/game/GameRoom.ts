@@ -607,6 +607,9 @@ export class GameRoom {
   }
 
   private advancePhase(): void {
+    const oldPhase = this.state.phase;
+    console.log(`[advancePhase] Advancing from ${oldPhase}...`);
+
     // Reset for new betting round
     for (const player of this.state.players.values()) {
       player.bet = 0n;
@@ -630,11 +633,15 @@ export class GameRoom {
         break;
       case 'river':
         this.state.phase = 'showdown';
+        console.log('[advancePhase] Going to showdown');
         this.showdown();
         return;
       default:
+        console.log(`[advancePhase] Unknown phase: ${this.state.phase}`);
         return;
     }
+
+    console.log(`[advancePhase] Now in ${this.state.phase}, community cards: ${this.state.communityCards.length}`);
 
     this.io.to(this.state.tableId).emit('game:phase-change', {
       phase: this.state.phase,
@@ -643,6 +650,7 @@ export class GameRoom {
 
     // Reset to first player after dealer
     this.setFirstToAct();
+    console.log(`[advancePhase] First to act: seat ${this.state.currentPlayerSeat}`);
     this.startPlayerTurn();
   }
 
@@ -883,10 +891,22 @@ export class GameRoom {
   // Helper Methods
   getValidActions(playerId: string): ActionType[] {
     const player = this.state.players.get(playerId);
-    if (!player || player.isFolded || player.isAllIn) return [];
+    if (!player) {
+      console.log(`[getValidActions] Player ${playerId} not found`);
+      return [];
+    }
+    if (player.isFolded) {
+      console.log(`[getValidActions] Player ${player.username} is folded`);
+      return [];
+    }
+    if (player.isAllIn) {
+      console.log(`[getValidActions] Player ${player.username} is all-in`);
+      return [];
+    }
 
     const actions: ActionType[] = ['fold'];
     const toCall = this.state.currentBet - player.bet;
+    console.log(`[getValidActions] Player ${player.username}: chips=${player.chips}, bet=${player.bet}, currentBet=${this.state.currentBet}, toCall=${toCall}`);
 
     if (toCall === 0n) {
       actions.push('check');
