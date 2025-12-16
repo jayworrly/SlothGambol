@@ -375,8 +375,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     socket.on("game:started", (data) => {
-      console.log(`Hand #${data.handNumber} started`);
+      console.log("[WebSocket] game:started received - Hand #" + data.handNumber);
       gameStore.setPhase("preflop");
+      gameStore.setHandNumber(data.handNumber);
     });
 
     socket.on("game:phase-change", (data) => {
@@ -389,6 +390,12 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     socket.on("game:turn", (data) => {
+      console.log("[WebSocket] game:turn received:", {
+        playerId: data.playerId,
+        seatNumber: data.seatNumber,
+        myPosition: gameStore.getState().myPosition,
+        availableActions: data.availableActions
+      });
       // Set whose turn it is
       gameStore.setCurrentActor(data.seatNumber);
       gameStore.setActionDeadline(Date.now() + data.timeRemaining * 1000);
