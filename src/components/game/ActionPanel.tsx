@@ -53,6 +53,7 @@ export function ActionPanel({
   const minBet = Number(bigBlind);
   const minRaise = Number(currentBet) + Number(bigBlind);
   const maxBet = Number(myStack);
+  const isBusted = myStack === 0n;
 
   // Reset bet amount when turn changes
   useEffect(() => {
@@ -81,6 +82,30 @@ export function ActionPanel({
     onAction(action, betAmount.toString());
     setShowSlider(false);
   };
+
+  // Show busted state when player has no chips
+  if (isBusted) {
+    return (
+      <div className="border-t border-gray-800 bg-gradient-to-r from-red-900/50 to-gray-900/80 backdrop-blur-sm p-4">
+        <div className="container mx-auto">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">💸</span>
+              <span className="text-xl font-bold text-red-400">You&apos;re Busted!</span>
+              <span className="text-2xl">💸</span>
+            </div>
+            <p className="text-gray-400">You&apos;ve run out of chips</p>
+            <button
+              onClick={() => window.location.href = '/lobby'}
+              className="mt-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 px-6 py-3 font-semibold text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-500 hover:to-purple-400 hover:scale-105"
+            >
+              Return to Lobby to Rebuy
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isMyTurn) {
     const needsMorePlayers = playerCount < minPlayers;
