@@ -41,7 +41,7 @@ export default function Home() {
           {/* Main Headline */}
           <h1 className="mb-6 text-5xl font-black tracking-tight sm:text-7xl lg:text-8xl">
             <span className="text-primary-text mb-2 block">THE FUTURE OF</span>
-            <span className="text-glow from-avalanche-red via-avalanche-red to-gold block bg-gradient-to-r bg-clip-text text-transparent">
+            <span className="from-avalanche-red via-avalanche-red to-gold block bg-gradient-to-r bg-clip-text text-transparent">
               ONLINE POKER
             </span>
           </h1>
