@@ -96,10 +96,10 @@ export function ActionPanel({
             </div>
             <p className="text-gray-400">You&apos;ve run out of chips</p>
             <button
-              onClick={() => window.location.href = '/lobby'}
+              onClick={() => window.location.href = '/cashier'}
               className="mt-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-500 px-6 py-3 font-semibold text-white shadow-lg shadow-purple-500/20 transition-all hover:from-purple-500 hover:to-purple-400 hover:scale-105"
             >
-              Return to Lobby to Rebuy
+              Go to Cashier to Rebuy
             </button>
           </div>
         </div>
