@@ -301,14 +301,35 @@ export class GameRoom {
 
     // Start preflop
     this.state.phase = 'preflop';
+
+    // Set first player to act in preflop
+    this.setPreflopFirstToAct();
+
     console.log(`[startNewHand] Emitting game:started for hand #${this.state.handNumber}`);
     this.io.to(this.state.tableId).emit('game:started', { handNumber: this.state.handNumber });
     console.log('[startNewHand] Broadcasting state...');
     this.broadcastState();
-    console.log('[startNewHand] Hand started successfully');
+    console.log(`[startNewHand] Hand started successfully, first to act: seat ${this.state.currentPlayerSeat}`);
 
     // Start action
     this.startPlayerTurn();
+  }
+
+  private setPreflopFirstToAct(): void {
+    const players = this.getActivePlayersInSeatOrder();
+    const dealerIndex = players.findIndex(p => p.seatNumber === this.state.dealerSeat);
+
+    if (players.length === 2) {
+      // Heads up: dealer/small blind acts first preflop
+      this.state.currentPlayerSeat = players[dealerIndex].seatNumber;
+    } else {
+      // 3+ players: UTG (player after big blind) acts first
+      // Big blind is 2 positions after dealer, so UTG is 3 positions after dealer
+      const utgIndex = (dealerIndex + 3) % players.length;
+      this.state.currentPlayerSeat = players[utgIndex].seatNumber;
+    }
+
+    console.log(`[setPreflopFirstToAct] Set first to act: seat ${this.state.currentPlayerSeat}`);
   }
 
   private moveDealer(): void {
