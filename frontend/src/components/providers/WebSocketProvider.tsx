@@ -1,0 +1,653 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
+import { io, Socket } from "socket.io-client";
+import { useAccount } from "wagmi";
+import { useGameStore } from "@/stores/gameStore";
+
+// Server event types (matching poker-server)
+interface SerializedCard {
+  suit: "hearts" | "diamonds" | "clubs" | "spades";
+  rank: string;
+}
+
+interface SerializedPlayer {
+  id: string;
+  walletAddress: string;
+  username: string;
+  seatNumber: number;
+  chips: string;
+  bet: string;
+  isActive: boolean;
+  isFolded: boolean;
+  isAllIn: boolean;
+  isDealer: boolean;
+  isSmallBlind: boolean;
+  isBigBlind: boolean;
+  lastAction: {
+    type: string;
+    amount: string;
+    timestamp: number;
+  } | null;
+  hasCards: boolean;
+}
+
+interface SerializedGameState {
+  tableId: string;
+  config: {
+    id: string;
+    name: string;
+    variant: string;
+    maxPlayers: number;
+    minPlayers: number;
+    smallBlind: string;
+    bigBlind: string;
+    minBuyIn: string;
+    maxBuyIn: string;
+    timeBank: number;
+    isPrivate: boolean;
+  };
+  phase: string;
+  players: SerializedPlayer[];
+  communityCards: SerializedCard[];
+  pot: string;
+  sidePots: { amount: string; eligiblePlayers: string[] }[];
+  currentBet: string;
+  dealerSeat: number;
+  currentPlayerSeat: number;
+  handNumber: number;
+  turnStartTime: number;
+}
+
+interface ServerToClientEvents {
+  // Game state updates
+  "game:state": (state: SerializedGameState) => void;
+  "game:started": (data: { handNumber: number }) => void;
+  "game:phase-change": (data: {
+    phase: string;
+    communityCards: SerializedCard[];
+  }) => void;
+  "game:player-action": (data: {
+    playerId: string;
+    action: { type: string; amount: string; timestamp: number };
+  }) => void;
+  "game:turn": (data: {
+    playerId: string;
+    seatNumber: number;
+    timeRemaining: number;
+    availableActions: string[];
+  }) => void;
+  "game:hand-result": (result: {
+    winners: {
+      playerId: string;
+      amount: string;
+      hand: { rank: string; description: string };
+    }[];
+    pots: { amount: string; winners: string[]; type: string }[];
+  }) => void;
+
+  // Player updates
+  "player:joined": (player: SerializedPlayer) => void;
+  "player:left": (data: { playerId: string; seatNumber: number }) => void;
+  "player:cards": (cards: SerializedCard[]) => void;
+  "player:chips-update": (data: { playerId: string; chips: string }) => void;
+
+  // Table updates
+  "table:pot-update": (data: {
+    pot: string;
+    sidePots: { amount: string; eligiblePlayers: string[] }[];
+  }) => void;
+  "table:chat": (data: {
+    playerId: string;
+    message: string;
+    timestamp: number;
+  }) => void;
+
+  // Mental Poker events
+  "mental-poker:phase": (data: {
+    phase: string;
+    currentShuffler?: string;
+  }) => void;
+  "mental-poker:commitment-received": (data: {
+    playerId: string;
+    commitmentsReceived: number;
+    totalPlayers: number;
+  }) => void;
+  "mental-poker:shuffle-turn": (data: {
+    playerId: string;
+    encryptedDeck: string[];
+  }) => void;
+  "mental-poker:shuffle-complete": (data: {
+    encryptedDeck: string[];
+  }) => void;
+  "mental-poker:request-key": (data: {
+    cardPosition: number;
+    cardType: "hole" | "community";
+    recipientId?: string;
+  }) => void;
+  "mental-poker:key-revealed": (data: {
+    playerId: string;
+    cardPosition: number;
+    complete: boolean;
+    playersNeeded: string[];
+  }) => void;
+  "mental-poker:card-revealed": (data: {
+    cardPosition: number;
+    cardType: "hole" | "community";
+    recipientId?: string;
+  }) => void;
+
+  // System events
+  error: (data: { code: string; message: string }) => void;
+  notification: (data: {
+    type: "info" | "warning" | "success";
+    message: string;
+  }) => void;
+}
+
+interface ClientToServerEvents {
+  // Table actions
+  "table:join": (
+    data: { tableId: string; seatNumber: number; buyIn: string },
+    callback: (response: {
+      success: boolean;
+      error?: string;
+      player?: SerializedPlayer;
+      gameState?: SerializedGameState;
+    }) => void
+  ) => void;
+  "table:leave": (
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+  "table:sit-out": (
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+  "table:sit-in": (
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+  "table:add-chips": (
+    data: { amount: string },
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+
+  // Game actions
+  "game:action": (
+    data: { action: string; amount?: string },
+    callback: (response: {
+      success: boolean;
+      error?: string;
+      newChips?: string;
+      pot?: string;
+    }) => void
+  ) => void;
+  "game:show-cards": (
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+
+  // Mental poker
+  "mental-poker:commit": (
+    data: { commitment: string },
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+  "mental-poker:shuffle": (
+    data: { encryptedDeck: string[] },
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+  "mental-poker:reveal-key": (
+    data: {
+      cardPosition: number;
+      decryptionKey: string;
+      commitment: string;
+      salt: string;
+    },
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+
+  // Chat
+  "chat:send": (
+    data: { message: string },
+    callback: (response: { success: boolean; error?: string }) => void
+  ) => void;
+}
+
+type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+
+interface WebSocketContextValue {
+  socket: TypedSocket | null;
+  isConnected: boolean;
+  playerId: string | null;
+  joinTable: (
+    tableId: string,
+    seatNumber: number,
+    buyIn: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  leaveTable: () => Promise<{ success: boolean; error?: string }>;
+  sendAction: (
+    action: string,
+    amount?: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  sendChat: (message: string) => void;
+  // Mental Poker
+  sendCommitment: (commitment: string) => Promise<{ success: boolean; error?: string }>;
+  sendShuffle: (encryptedDeck: string[]) => Promise<{ success: boolean; error?: string }>;
+  sendKeyReveal: (data: {
+    cardPosition: number;
+    decryptionKey: string;
+    commitment: string;
+    salt: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+}
+
+const WebSocketContext = createContext<WebSocketContextValue | null>(null);
+
+export function WebSocketProvider({ children }: { children: React.ReactNode }) {
+  const socketRef = useRef<TypedSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const { address, isConnected: isWalletConnected } = useAccount();
+  const gameStore = useGameStore();
+
+  // Initialize socket connection
+  useEffect(() => {
+    if (!isWalletConnected || !address) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+        setIsConnected(false);
+        setPlayerId(null);
+        gameStore.setConnected(false);
+      }
+      return;
+    }
+
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3001";
+
+    socketRef.current = io(wsUrl, {
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      auth: {
+        walletAddress: address,
+        username: `Player_${address.slice(2, 8)}`,
+      },
+    });
+
+    const socket = socketRef.current;
+
+    socket.on("connect", () => {
+      console.log("WebSocket connected");
+      setIsConnected(true);
+      gameStore.setConnected(true);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("WebSocket disconnected");
+      setIsConnected(false);
+      gameStore.setConnected(false);
+    });
+
+    socket.on("error", (data) => {
+      console.error("WebSocket error:", data.message);
+    });
+
+    socket.on("notification", (data) => {
+      console.log(`[${data.type}] ${data.message}`);
+    });
+
+    // Game state handlers
+    socket.on("game:state", (state) => {
+      gameStore.setPhase(state.phase as Parameters<typeof gameStore.setPhase>[0]);
+      gameStore.setPot(BigInt(state.pot));
+      gameStore.setCurrentBet(BigInt(state.currentBet));
+      gameStore.setCommunityCards(state.communityCards);
+
+      // Update players
+      for (const player of state.players) {
+        gameStore.addOrUpdatePlayer(player.seatNumber, {
+          walletAddress: player.walletAddress,
+          username: player.username,
+          stack: BigInt(player.chips),
+          currentBet: BigInt(player.bet),
+          isFolded: player.isFolded,
+          isAllIn: player.isAllIn,
+          isDealer: player.isDealer,
+          isActive: !player.isFolded && player.isActive,
+        });
+      }
+    });
+
+    socket.on("game:started", (data) => {
+      console.log(`Hand #${data.handNumber} started`);
+      gameStore.setPhase("preflop");
+    });
+
+    socket.on("game:phase-change", (data) => {
+      gameStore.setPhase(data.phase as Parameters<typeof gameStore.setPhase>[0]);
+      gameStore.setCommunityCards(data.communityCards);
+    });
+
+    socket.on("player:cards", (cards) => {
+      gameStore.setMyHoleCards(cards);
+    });
+
+    socket.on("game:turn", (data) => {
+      // Set whose turn it is
+      gameStore.setCurrentActor(data.seatNumber);
+      gameStore.setActionDeadline(Date.now() + data.timeRemaining * 1000);
+      // Map server action types to store action types
+      const actionTypeMap: Record<string, "fold" | "check" | "call" | "bet" | "raise" | "all_in"> = {
+        "fold": "fold",
+        "check": "check",
+        "call": "call",
+        "bet": "bet",
+        "raise": "raise",
+        "all-in": "all_in",
+      };
+      const actions = data.availableActions.map((type) => ({
+        type: actionTypeMap[type] || "fold",
+        minAmount: 0n,
+        maxAmount: 0n,
+      }));
+      gameStore.setAvailableActions(actions);
+    });
+
+    socket.on("game:player-action", (data) => {
+      console.log(`Player ${data.playerId}: ${data.action.type} ${data.action.amount}`);
+    });
+
+    socket.on("game:hand-result", (result) => {
+      gameStore.setPhase("showdown");
+      console.log("Hand result:", result);
+    });
+
+    socket.on("player:joined", (player) => {
+      console.log(`Player ${player.username} joined at seat ${player.seatNumber}`);
+      gameStore.addOrUpdatePlayer(player.seatNumber, {
+        walletAddress: player.walletAddress,
+        username: player.username,
+        stack: BigInt(player.chips),
+        currentBet: 0n,
+        isFolded: false,
+        isAllIn: false,
+        isDealer: player.isDealer,
+        isActive: true,
+      });
+    });
+
+    socket.on("player:left", (data) => {
+      console.log(`Player left seat ${data.seatNumber}`);
+      gameStore.removePlayer(data.seatNumber);
+    });
+
+    socket.on("table:pot-update", (data) => {
+      gameStore.setPot(BigInt(data.pot));
+    });
+
+    socket.on("table:chat", (data) => {
+      console.log(`[Chat] ${data.playerId}: ${data.message}`);
+    });
+
+    // Mental Poker event handlers
+    socket.on("mental-poker:phase", (data) => {
+      console.log(`Mental Poker phase: ${data.phase}`, data.currentShuffler);
+      gameStore.setMentalPokerPhase(
+        data.phase as Parameters<typeof gameStore.setMentalPokerPhase>[0]
+      );
+      gameStore.setCurrentShuffler(data.currentShuffler || null);
+    });
+
+    socket.on("mental-poker:commitment-received", (data) => {
+      console.log(`Commitment received from ${data.playerId}: ${data.commitmentsReceived}/${data.totalPlayers}`);
+      gameStore.setCommitmentsReceived(data.commitmentsReceived);
+    });
+
+    socket.on("mental-poker:shuffle-turn", (data) => {
+      console.log(`Shuffle turn for player ${data.playerId}`);
+      gameStore.setEncryptedDeck(data.encryptedDeck);
+      // Check if it's my turn to shuffle
+      if (data.playerId === playerId) {
+        gameStore.setIsMyShuffleTurn(true);
+      }
+    });
+
+    socket.on("mental-poker:shuffle-complete", (data) => {
+      console.log("Shuffle complete");
+      gameStore.setEncryptedDeck(data.encryptedDeck);
+      gameStore.setIsMyShuffleTurn(false);
+    });
+
+    socket.on("mental-poker:request-key", (data) => {
+      console.log(`Key request for card ${data.cardPosition} (${data.cardType})`);
+      gameStore.addPendingKeyRequest({
+        cardPosition: data.cardPosition,
+        cardType: data.cardType,
+        recipientId: data.recipientId,
+      });
+    });
+
+    socket.on("mental-poker:key-revealed", (data) => {
+      console.log(`Key revealed by ${data.playerId} for card ${data.cardPosition}`);
+      if (data.complete) {
+        gameStore.removePendingKeyRequest(data.cardPosition);
+      }
+    });
+
+    socket.on("mental-poker:card-revealed", (data) => {
+      console.log(`Card ${data.cardPosition} revealed (${data.cardType})`);
+      // The actual card decryption happens on the client side
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isWalletConnected, address, playerId]);
+
+  // Action handlers
+  const joinTable = useCallback(
+    (
+      tableId: string,
+      seatNumber: number,
+      buyIn: string
+    ): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        if (!socketRef.current) {
+          resolve({ success: false, error: "Not connected" });
+          return;
+        }
+
+        socketRef.current.emit(
+          "table:join",
+          { tableId, seatNumber, buyIn },
+          (response) => {
+            if (response.success && response.player) {
+              setPlayerId(response.player.id);
+              gameStore.setTableId(tableId);
+              gameStore.setMySeat(seatNumber);
+              if (response.gameState) {
+                // Set all game state from response
+                gameStore.setPhase(
+                  response.gameState.phase as Parameters<typeof gameStore.setPhase>[0]
+                );
+                gameStore.setPot(BigInt(response.gameState.pot));
+                gameStore.setCurrentBet(BigInt(response.gameState.currentBet));
+                gameStore.setCommunityCards(response.gameState.communityCards);
+
+                // Process all existing players at the table
+                for (const player of response.gameState.players) {
+                  gameStore.addOrUpdatePlayer(player.seatNumber, {
+                    walletAddress: player.walletAddress,
+                    username: player.username,
+                    stack: BigInt(player.chips),
+                    currentBet: BigInt(player.bet),
+                    isFolded: player.isFolded,
+                    isAllIn: player.isAllIn,
+                    isDealer: player.isDealer,
+                    isActive: !player.isFolded && player.isActive,
+                  });
+                }
+              }
+            }
+            resolve(response);
+          }
+        );
+      });
+    },
+    []
+  );
+
+  const leaveTable = useCallback((): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    return new Promise((resolve) => {
+      if (!socketRef.current) {
+        resolve({ success: false, error: "Not connected" });
+        return;
+      }
+
+      socketRef.current.emit("table:leave", (response) => {
+        if (response.success) {
+          setPlayerId(null);
+          gameStore.resetTable();
+        }
+        resolve(response);
+      });
+    });
+  }, []);
+
+  const sendAction = useCallback(
+    (
+      action: string,
+      amount?: string
+    ): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        if (!socketRef.current) {
+          resolve({ success: false, error: "Not connected" });
+          return;
+        }
+
+        socketRef.current.emit(
+          "game:action",
+          { action, amount },
+          (response) => {
+            resolve(response);
+          }
+        );
+      });
+    },
+    []
+  );
+
+  const sendChat = useCallback((message: string) => {
+    if (!socketRef.current) return;
+
+    socketRef.current.emit("chat:send", { message }, (response) => {
+      if (!response.success) {
+        console.error("Failed to send chat:", response.error);
+      }
+    });
+  }, []);
+
+  // Mental Poker actions
+  const sendCommitment = useCallback(
+    (commitment: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        if (!socketRef.current) {
+          resolve({ success: false, error: "Not connected" });
+          return;
+        }
+
+        socketRef.current.emit(
+          "mental-poker:commit",
+          { commitment },
+          (response) => {
+            if (response.success) {
+              gameStore.setCommitmentsSent(true);
+            }
+            resolve(response);
+          }
+        );
+      });
+    },
+    []
+  );
+
+  const sendShuffle = useCallback(
+    (encryptedDeck: string[]): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        if (!socketRef.current) {
+          resolve({ success: false, error: "Not connected" });
+          return;
+        }
+
+        socketRef.current.emit(
+          "mental-poker:shuffle",
+          { encryptedDeck },
+          (response) => {
+            if (response.success) {
+              gameStore.setIsMyShuffleTurn(false);
+            }
+            resolve(response);
+          }
+        );
+      });
+    },
+    []
+  );
+
+  const sendKeyReveal = useCallback(
+    (data: {
+      cardPosition: number;
+      decryptionKey: string;
+      commitment: string;
+      salt: string;
+    }): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        if (!socketRef.current) {
+          resolve({ success: false, error: "Not connected" });
+          return;
+        }
+
+        socketRef.current.emit("mental-poker:reveal-key", data, (response) => {
+          resolve(response);
+        });
+      });
+    },
+    []
+  );
+
+  const value: WebSocketContextValue = {
+    socket: socketRef.current,
+    isConnected,
+    playerId,
+    joinTable,
+    leaveTable,
+    sendAction,
+    sendChat,
+    sendCommitment,
+    sendShuffle,
+    sendKeyReveal,
+  };
+
+  return (
+    <WebSocketContext.Provider value={value}>
+      {children}
+    </WebSocketContext.Provider>
+  );
+}
+
+export function useWebSocket() {
+  const context = useContext(WebSocketContext);
+  if (!context) {
+    throw new Error("useWebSocket must be used within WebSocketProvider");
+  }
+  return context;
+}
