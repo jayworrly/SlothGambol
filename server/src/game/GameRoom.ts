@@ -228,15 +228,25 @@ export class GameRoom {
   // Game Flow
   private checkGameStart(): void {
     const activePlayers = this.getActivePlayers();
+    console.log(`[checkGameStart] Active players: ${activePlayers.length}, minPlayers: ${this.state.config.minPlayers}, phase: ${this.state.phase}`);
+
     if (activePlayers.length >= this.state.config.minPlayers && this.state.phase === 'waiting') {
+      console.log('[checkGameStart] Starting game in 3 seconds...');
       // Start game after a short delay
-      setTimeout(() => this.startNewHand(), 3000);
+      setTimeout(() => {
+        console.log('[checkGameStart] Timer fired, calling startNewHand');
+        this.startNewHand();
+      }, 3000);
     }
   }
 
   private startNewHand(): void {
+    console.log('[startNewHand] Starting new hand...');
     const activePlayers = this.getActivePlayers();
+    console.log(`[startNewHand] Active players: ${activePlayers.length}`);
+
     if (activePlayers.length < this.state.config.minPlayers) {
+      console.log('[startNewHand] Not enough players, setting phase to waiting');
       this.state.phase = 'waiting';
       return;
     }
@@ -278,8 +288,11 @@ export class GameRoom {
 
     // Start preflop
     this.state.phase = 'preflop';
+    console.log(`[startNewHand] Emitting game:started for hand #${this.state.handNumber}`);
     this.io.to(this.state.tableId).emit('game:started', { handNumber: this.state.handNumber });
+    console.log('[startNewHand] Broadcasting state...');
     this.broadcastState();
+    console.log('[startNewHand] Hand started successfully');
 
     // Start action
     this.startPlayerTurn();
