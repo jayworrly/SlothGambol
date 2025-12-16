@@ -25,30 +25,30 @@ On-chain poker platform with trustless card dealing via Mental Poker cryptograph
 
 ```
 SlothGambol/
-├── frontend/          # Next.js web application
+├── src/               # Next.js frontend source
+│   ├── app/          # App router pages
+│   ├── components/   # React components
+│   ├── config/       # Configuration
+│   ├── hooks/        # Custom hooks
+│   ├── lib/          # Utilities & Mental Poker
+│   └── stores/       # Zustand stores
+├── public/           # Static assets
+├── server/           # WebSocket game server
 │   ├── src/
-│   │   ├── app/       # App router pages
-│   │   ├── components/# React components
-│   │   ├── hooks/     # Custom hooks
-│   │   ├── lib/       # Utilities & Mental Poker
-│   │   └── stores/    # Zustand stores
+│   │   ├── game/     # Poker engine
+│   │   └── socket/   # Socket.io handlers
 │   └── package.json
-│
-├── server/            # WebSocket game server
-│   ├── src/
-│   │   ├── game/      # Poker engine
-│   │   ├── socket/    # Socket.io handlers
-│   │   └── mental-poker/
-│   └── package.json
-│
-└── docker-compose.yml # Local development
+├── supabase/         # Database migrations
+├── package.json      # Frontend dependencies
+├── Dockerfile        # Frontend container
+└── docker-compose.yml
 ```
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - npm or yarn
 - Supabase account
 - Privy account
@@ -60,17 +60,17 @@ git clone https://github.com/jayworrly/SlothGambol.git
 cd SlothGambol
 
 # Install frontend dependencies
-cd frontend && npm install
+npm install
 
 # Install server dependencies
-cd ../server && npm install
+cd server && npm install && cd ..
 ```
 
 ### 2. Environment Setup
 
 ```bash
 # Frontend
-cp frontend/.env.example frontend/.env.local
+cp .env.example .env.local
 
 # Server
 cp server/.env.example server/.env
@@ -82,54 +82,52 @@ Edit the `.env` files with your credentials:
 
 ### 3. Run Development Servers
 
-Terminal 1 - Server:
+Terminal 1 - Frontend:
 ```bash
-cd server
 npm run dev
 ```
 
-Terminal 2 - Frontend:
+Terminal 2 - Server:
 ```bash
-cd frontend
-npm run dev
+cd server && npm run dev
 ```
 
 Open http://localhost:3000
 
 ## Environment Variables
 
-### Frontend (`frontend/.env.local`)
+### Frontend (`.env.local`)
 
 | Variable | Description |
 |----------|-------------|
 | `NEXT_PUBLIC_PRIVY_APP_ID` | Privy application ID |
+| `PRIVY_SECRET` | Privy secret key |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key |
 | `NEXT_PUBLIC_WS_URL` | WebSocket server URL |
+| `NEXT_PUBLIC_CHAIN_ID` | Chain ID (43113 for Fuji) |
 
 ### Server (`server/.env`)
 
 | Variable | Description |
 |----------|-------------|
 | `PORT` | Server port (default: 3001) |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_SERVICE_KEY` | Supabase service role key |
+| `CORS_ORIGIN` | Frontend URL for CORS |
+| `NODE_ENV` | Environment (development/production) |
 
 ## Deployment
 
 ### Frontend (Vercel)
 
-```bash
-cd frontend
-vercel
-```
+1. Connect GitHub repo to Vercel
+2. Add environment variables in dashboard
+3. Deploy (auto-detects Next.js at root)
 
 ### Server (Railway/Render/Fly.io)
 
-```bash
-cd server
-# Follow your platform's deployment guide
-```
+1. Deploy the `server/` directory
+2. Set environment variables
+3. Update `NEXT_PUBLIC_WS_URL` in Vercel
 
 ### Docker
 
@@ -153,20 +151,6 @@ docker-compose up -d
 4. **Play Phase**: Standard poker with cryptographic verification
 5. **Showdown**: All keys revealed to verify fair play
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
 ## License
 
-MIT License - see LICENSE file for details
-
-## Links
-
-- [Live Demo](https://slothgambol.com)
-- [Documentation](./docs)
-- [Discord](https://discord.gg/slothgambol)
-- [Twitter](https://twitter.com/slothgambol)
+MIT License
