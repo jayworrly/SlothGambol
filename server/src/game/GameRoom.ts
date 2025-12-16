@@ -540,18 +540,25 @@ export class GameRoom {
 
   private advanceGame(): void {
     const activeCount = this.getActivePlayersInHand().length;
+    console.log(`[advanceGame] Active players in hand: ${activeCount}`);
 
     // Check for single winner
     if (activeCount === 1) {
+      console.log('[advanceGame] Single winner, ending hand');
       this.endHandSingleWinner();
       return;
     }
 
     // Check if betting round is complete
-    if (this.isBettingRoundComplete()) {
+    const roundComplete = this.isBettingRoundComplete();
+    console.log(`[advanceGame] Betting round complete: ${roundComplete}`);
+
+    if (roundComplete) {
       this.advancePhase();
     } else {
+      console.log(`[advanceGame] Moving to next player from seat ${this.state.currentPlayerSeat}`);
       this.moveToNextPlayer();
+      console.log(`[advanceGame] Next player seat: ${this.state.currentPlayerSeat}`);
       this.startPlayerTurn();
     }
   }
@@ -679,10 +686,15 @@ export class GameRoom {
 
   private startPlayerTurn(): void {
     const currentPlayer = this.getCurrentPlayer();
-    if (!currentPlayer) return;
+    if (!currentPlayer) {
+      console.log('[startPlayerTurn] No current player found!');
+      return;
+    }
 
     this.state.turnStartTime = Date.now();
     const validActions = this.getValidActions(currentPlayer.id);
+
+    console.log(`[startPlayerTurn] Player ${currentPlayer.username} (seat ${currentPlayer.seatNumber}), actions: ${validActions.join(', ')}`);
 
     this.io.to(this.state.tableId).emit('game:turn', {
       playerId: currentPlayer.id,
