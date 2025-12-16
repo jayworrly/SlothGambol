@@ -656,10 +656,55 @@ export class GameRoom {
       communityCards: this.state.communityCards.map(c => this.serializeCard(c))
     });
 
+    // Check if any player can still act (not folded and not all-in)
+    const playersWhoCanAct = this.getActivePlayersInHand().filter(p => !p.isAllIn);
+
+    if (playersWhoCanAct.length === 0) {
+      // All remaining players are all-in - run out the board and go to showdown
+      console.log('[advancePhase] All players all-in, running out the board...');
+      this.runOutBoard();
+      return;
+    }
+
     // Reset to first player after dealer
     this.setFirstToAct();
     console.log(`[advancePhase] First to act: seat ${this.state.currentPlayerSeat}`);
     this.startPlayerTurn();
+  }
+
+  /**
+   * When all players are all-in, deal remaining community cards and go to showdown
+   */
+  private runOutBoard(): void {
+    const cardsNeeded = 5 - this.state.communityCards.length;
+    console.log(`[runOutBoard] Dealing ${cardsNeeded} remaining community cards`);
+
+    for (let i = 0; i < cardsNeeded; i++) {
+      // Burn
+      this.state.deck.pop();
+      // Deal
+      const card = this.state.deck.pop()!;
+      this.state.communityCards.push(card);
+
+      // Determine phase for each card dealt
+      if (this.state.communityCards.length === 3) {
+        this.state.phase = 'flop';
+      } else if (this.state.communityCards.length === 4) {
+        this.state.phase = 'turn';
+      } else if (this.state.communityCards.length === 5) {
+        this.state.phase = 'river';
+      }
+    }
+
+    // Broadcast final board state
+    this.io.to(this.state.tableId).emit('game:phase-change', {
+      phase: 'showdown',
+      communityCards: this.state.communityCards.map(c => this.serializeCard(c))
+    });
+
+    // Go to showdown
+    this.state.phase = 'showdown';
+    this.showdown();
   }
 
   private dealCommunityCards(count: number): void {
