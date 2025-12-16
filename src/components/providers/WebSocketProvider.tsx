@@ -253,6 +253,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const playerIdRef = useRef<string | null>(null); // Ref to avoid reconnection loops
+  const lastAddressRef = useRef<string | null>(null); // Track last connected address
   const { address, isConnected: isWalletConnected } = useAccount();
   const gameStore = useGameStore();
 
@@ -263,7 +264,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize socket connection
   useEffect(() => {
-    console.log('[WebSocket] Effect running - v3', { isWalletConnected, address: address?.slice(0, 10) }); // Version marker
+    console.log('[WebSocket] Effect running - v4', { isWalletConnected, address: address?.slice(0, 10), lastAddress: lastAddressRef.current?.slice(0, 10) }); // Version marker
 
     if (!isWalletConnected || !address) {
       console.log('[WebSocket] No wallet connected, cleaning up');
@@ -271,6 +272,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         console.log('[WebSocket] Disconnecting existing socket due to wallet disconnect');
         socketRef.current.disconnect();
         socketRef.current = null;
+        lastAddressRef.current = null;
         setIsConnected(false);
         setPlayerId(null);
         gameStore.setConnected(false);
@@ -278,13 +280,24 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Prevent duplicate connections
-    if (socketRef.current?.connected) {
-      console.log('[WebSocket] Socket already connected, skipping');
+    // Check if we already have a connection for this address
+    const sameAddress = lastAddressRef.current === address;
+    const hasActiveSocket = socketRef.current && (socketRef.current.connected || socketRef.current.active);
+
+    if (sameAddress && hasActiveSocket) {
+      console.log('[WebSocket] Already connected with same address, skipping');
       return;
     }
 
+    // If address changed, disconnect old socket first
+    if (socketRef.current && !sameAddress) {
+      console.log('[WebSocket] Address changed, disconnecting old socket');
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3001";
+    console.log('[WebSocket] Creating new connection to', wsUrl);
 
     socketRef.current = io(wsUrl, {
       autoConnect: true,
@@ -301,8 +314,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     const socket = socketRef.current;
 
+    // Track which address we're connected with
+    lastAddressRef.current = address;
+
     socket.on("connect", () => {
-      console.log("[WebSocket] Connected, id:", socket.id);
+      console.log("[WebSocket] Connected, id:", socket.id, "address:", address?.slice(0, 10));
       setIsConnected(true);
       gameStore.setConnected(true);
     });
@@ -468,11 +484,23 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       // The actual card decryption happens on the client side
     });
 
+    // Cleanup: only log, actual disconnection is handled at the start of the effect
+    // when address changes or wallet disconnects
     return () => {
-      console.log('[WebSocket] Cleanup running - disconnecting socket');
-      socket.disconnect();
+      console.log('[WebSocket] Effect cleanup called');
     };
   }, [isWalletConnected, address]); // Removed playerId to prevent reconnection loops
+
+  // Disconnect socket when component unmounts
+  useEffect(() => {
+    return () => {
+      console.log('[WebSocket] Component unmounting, disconnecting socket');
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, []);
 
   // Action handlers
   const joinTable = useCallback(
