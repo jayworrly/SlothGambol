@@ -343,10 +343,21 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     // Game state handlers
     socket.on("game:state", (state) => {
+      console.log("[WebSocket] game:state received:", { phase: state.phase, currentPlayerSeat: state.currentPlayerSeat, handNumber: state.handNumber });
       gameStore.setPhase(state.phase as Parameters<typeof gameStore.setPhase>[0]);
       gameStore.setPot(BigInt(state.pot));
       gameStore.setCurrentBet(BigInt(state.currentBet));
       gameStore.setCommunityCards(state.communityCards);
+
+      // Set current actor from server state
+      if (state.currentPlayerSeat !== undefined && state.currentPlayerSeat >= 0) {
+        gameStore.setCurrentActor(state.currentPlayerSeat);
+      }
+
+      // Set hand number
+      if (state.handNumber) {
+        gameStore.setHandNumber(state.handNumber);
+      }
 
       // Update players
       for (const player of state.players) {

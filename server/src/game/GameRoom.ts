@@ -221,6 +221,19 @@ export class GameRoom {
       socket.emit('player:cards', player.cards.map(c => this.serializeCard(c)));
     }
 
+    // If it's their turn, re-send the turn notification with available actions
+    if (this.isPlayerTurn(playerId) && this.state.phase !== 'waiting' && this.state.phase !== 'finished') {
+      const validActions = this.getValidActions(playerId);
+      const remainingTime = Math.max(0, Math.floor((this.state.config.timeBank * 1000 - (Date.now() - this.state.turnStartTime)) / 1000));
+      socket.emit('game:turn', {
+        playerId: playerId,
+        seatNumber: player.seatNumber,
+        timeRemaining: remainingTime,
+        availableActions: validActions
+      });
+      console.log(`Resent game:turn to reconnected player ${player.username}, actions: ${validActions.join(', ')}`);
+    }
+
     console.log(`Player ${player.username} reconnected to table ${this.state.tableId}`);
     return true;
   }
