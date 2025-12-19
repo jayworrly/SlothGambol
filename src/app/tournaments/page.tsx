@@ -77,7 +77,7 @@ export default function TournamentsPage() {
               Please connect your crypto wallet to view tournaments.
             </p>
             <p className="text-foreground/50 text-sm">
-              Click the "Connect Wallet" button in the header to get started.
+              Click the &quot;Connect Wallet&quot; button in the header to get started.
             </p>
           </div>
         </main>
@@ -131,6 +131,8 @@ export default function TournamentsPage() {
 }
 
 function TournamentCard({ tournament }: { tournament: Tournament }) {
+  // Calculate time until start - intentionally calculated at render time for display
+  // eslint-disable-next-line react-hooks/purity
   const timeUntilStart = tournament.startTime.getTime() - Date.now();
   const isStartingSoon = timeUntilStart > 0 && timeUntilStart < 1800000;
 

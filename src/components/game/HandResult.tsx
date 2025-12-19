@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn, formatChips } from "@/lib/utils";
+import { formatChips } from "@/lib/utils";
 import { Card, CardData } from "./Card";
 
 export interface WinnerInfo {
@@ -220,33 +220,46 @@ function WinnerCard({ winner, index }: WinnerCardProps) {
   );
 }
 
-function Confetti() {
+// Generate confetti data outside component to ensure stable random values
+function generateConfettiData() {
   const colors = ["#fbbf24", "#f59e0b", "#ef4444", "#22c55e", "#3b82f6"];
+  return Array.from({ length: 50 }).map(() => ({
+    initialX: Math.random() * 400 - 200,
+    rotate: Math.random() * 720 - 360,
+    duration: Math.random() * 2 + 2,
+    delay: Math.random() * 0.5,
+    color: colors[Math.floor(Math.random() * colors.length)],
+  }));
+}
+
+function Confetti() {
+  // Initialize once with useState function initializer (runs only on mount)
+  const [confettiData] = useState(generateConfettiData);
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {Array.from({ length: 50 }).map((_, i) => (
+      {confettiData.map((data, i) => (
         <motion.div
           key={i}
           initial={{
-            x: Math.random() * 400 - 200,
+            x: data.initialX,
             y: -20,
             rotate: 0,
             opacity: 1,
           }}
           animate={{
             y: 600,
-            rotate: Math.random() * 720 - 360,
+            rotate: data.rotate,
             opacity: 0,
           }}
           transition={{
-            duration: Math.random() * 2 + 2,
-            delay: Math.random() * 0.5,
+            duration: data.duration,
+            delay: data.delay,
             ease: "linear",
           }}
           className="absolute left-1/2 top-0 h-3 w-3 rounded-sm"
           style={{
-            backgroundColor: colors[Math.floor(Math.random() * colors.length)],
+            backgroundColor: data.color,
           }}
         />
       ))}

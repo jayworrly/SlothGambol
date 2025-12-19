@@ -73,6 +73,7 @@ export class MentalPokerGame {
   constructor(playerId: string, prime?: bigint) {
     this.playerId = playerId;
     // Dynamic import to avoid circular dependencies
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ShuffleCoordinator } = require('./shuffle');
     this.shuffleCoordinator = new ShuffleCoordinator(playerId, prime);
   }
@@ -114,6 +115,7 @@ export class MentalPokerGame {
     this.phase = 'deal';
 
     // Initialize reveal manager
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { RevealManager } = require('./reveal');
     this.revealManager = new RevealManager(
       this.encryptedDeck,

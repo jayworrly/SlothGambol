@@ -18,6 +18,8 @@ import type {
 } from '../types/poker.js';
 import { createDeck, shuffleDeck, findBestHand, compareHands } from '../utils/handEvaluator.js';
 import { MentalPokerCoordinator } from '../mental-poker/coordinator.js';
+import { chipVault } from '../blockchain/chipVault.js';
+import { db } from '../database/supabase.js';
 
 type PokerSocket = Socket<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
 
@@ -106,6 +108,7 @@ export class GameRoom {
       isActive: true,
       isFolded: false,
       isAllIn: false,
+      isSittingOut: false,
       isDealer: false,
       isSmallBlind: false,
       isBigBlind: false,
@@ -782,7 +785,7 @@ export class GameRoom {
     }
   }
 
-  private showdown(): void {
+  private async showdown(): Promise<void> {
     console.log('[showdown] Starting showdown...');
     const playersInHand = this.getActivePlayersInHand();
 
@@ -821,6 +824,10 @@ export class GameRoom {
     // Broadcast the updated state so clients know hand is finished
     this.broadcastState();
 
+    // Record to database and settle on blockchain (async, don't block)
+    this.recordHandResult(result).catch(err => console.error('Error recording hand:', err));
+    this.settleOnBlockchain(result).catch(err => console.error('Error settling on blockchain:', err));
+
     console.log('[showdown] Scheduling next hand in 5 seconds...');
     setTimeout(() => {
       console.log('[showdown] Timer fired, starting new hand');
@@ -832,6 +839,21 @@ export class GameRoom {
     const winner = this.getActivePlayersInHand()[0];
     console.log(`[endHandSingleWinner] Winner: ${winner.username}, pot: ${this.state.pot}`);
     winner.chips += this.state.pot;
+
+    // Create result for recording
+    const result: HandResult = {
+      winners: [{
+        playerId: winner.id,
+        amount: this.state.pot,
+        hand: { rank: 'high-card', cards: [], kickers: [], description: 'Others folded' }
+      }],
+      pots: [{
+        amount: this.state.pot,
+        winners: [winner.id],
+        type: 'main'
+      }],
+      handRankings: new Map()
+    };
 
     this.io.to(this.state.tableId).emit('game:hand-result', {
       winners: [{
@@ -850,6 +872,10 @@ export class GameRoom {
 
     // Broadcast the updated state so clients know hand is finished
     this.broadcastState();
+
+    // Record to database and settle on blockchain (async, don't block)
+    this.recordHandResult(result).catch(err => console.error('Error recording hand:', err));
+    this.settleOnBlockchain(result).catch(err => console.error('Error settling on blockchain:', err));
 
     console.log('[endHandSingleWinner] Scheduling next hand in 3 seconds...');
     setTimeout(() => {
@@ -1103,6 +1129,173 @@ export class GameRoom {
       }
     }
     return undefined;
+  }
+
+  // Set player sitting out status
+  setPlayerSitOut(playerId: string, sitOut: boolean): boolean {
+    const player = this.state.players.get(playerId);
+    if (!player) return false;
+
+    player.isSittingOut = sitOut;
+    player.isActive = !sitOut && player.chips > 0n;
+
+    // Broadcast updated state
+    this.broadcastState();
+    return true;
+  }
+
+  // Add chips to player (rebuy)
+  addChipsToPlayer(playerId: string, amount: bigint): boolean {
+    const player = this.state.players.get(playerId);
+    if (!player) return false;
+
+    // Check if adding would exceed max buy-in
+    const newTotal = player.chips + amount;
+    if (newTotal > this.state.config.maxBuyIn) {
+      return false;
+    }
+
+    // Can only add chips when not in an active hand or when busted
+    if (this.state.phase !== 'waiting' && this.state.phase !== 'finished' && player.chips > 0n) {
+      return false;
+    }
+
+    player.chips += amount;
+    player.isActive = true;
+    player.isSittingOut = false;
+
+    // Broadcast chip update
+    this.io.to(this.state.tableId).emit('player:chips-update', {
+      playerId,
+      chips: player.chips.toString()
+    });
+
+    // Check if game can start now
+    this.checkGameStart();
+
+    return true;
+  }
+
+  // Show player cards (at showdown or voluntarily)
+  showPlayerCards(playerId: string): boolean {
+    const player = this.state.players.get(playerId);
+    if (!player) return false;
+
+    // Can only show cards after hand is finished or at showdown
+    if (this.state.phase !== 'finished' && this.state.phase !== 'showdown') {
+      return false;
+    }
+
+    // Must have cards to show
+    if (player.cards.length === 0) {
+      return false;
+    }
+
+    // Broadcast the player's cards to all
+    this.io.to(this.state.tableId).emit('player:cards', player.cards.map(c => this.serializeCard(c)));
+    return true;
+  }
+
+  // Record hand to database and update stats
+  private async recordHandResult(result: HandResult): Promise<void> {
+    if (!db.isConnected()) return;
+
+    try {
+      // Get all players who participated in the hand
+      const players = Array.from(this.state.players.values());
+
+      // Record the hand
+      const handId = await db.recordHand({
+        table_id: this.state.tableId,
+        hand_number: this.state.handNumber,
+        variant: this.state.config.variant,
+        players: players.map(p => ({
+          id: p.id,
+          walletAddress: p.walletAddress,
+          seatNumber: p.seatNumber,
+          startingStack: p.chips.toString()
+        })),
+        community_cards: this.state.communityCards,
+        actions: this.state.actionHistory,
+        winners: result.winners.map(w => ({
+          playerId: w.playerId,
+          amount: w.amount.toString(),
+          hand: w.hand.rank
+        })),
+        total_pot: this.state.pot.toString()
+      });
+
+      if (handId) {
+        // Record participants
+        const participants = players.map(p => {
+          const winner = result.winners.find(w => w.playerId === p.id);
+          const netResult = winner
+            ? winner.amount - p.totalBet
+            : -p.totalBet;
+
+          return {
+            hand_id: handId,
+            user_id: p.id, // Note: This should be the database user ID, not player ID
+            seat_number: p.seatNumber,
+            starting_stack: (p.chips - (winner?.amount || 0n) + p.totalBet).toString(),
+            ending_stack: p.chips.toString(),
+            hole_cards: p.cards,
+            final_hand_rank: winner?.hand.rank,
+            net_result: netResult.toString(),
+            is_winner: !!winner,
+            showed_cards: false
+          };
+        });
+
+        await db.recordHandParticipants(participants);
+      }
+
+      console.log(`[recordHandResult] Recorded hand #${this.state.handNumber} to database`);
+    } catch (error) {
+      console.error('[recordHandResult] Error recording hand:', error);
+    }
+  }
+
+  // Settle on blockchain after hand
+  private async settleOnBlockchain(result: HandResult): Promise<void> {
+    if (!chipVault.canWrite()) return;
+
+    try {
+      // Get players who were in the hand
+      const players = Array.from(this.state.players.values());
+      const walletAddresses: `0x${string}`[] = [];
+      const deltas: bigint[] = [];
+
+      for (const player of players) {
+        // Only include players who bet something this hand
+        if (player.totalBet > 0n) {
+          const winner = result.winners.find(w => w.playerId === player.id);
+          const netResult = winner
+            ? winner.amount - player.totalBet
+            : -player.totalBet;
+
+          walletAddresses.push(player.walletAddress as `0x${string}`);
+          deltas.push(netResult);
+        }
+      }
+
+      // Only settle if there were bets
+      if (walletAddresses.length > 0) {
+        const settleResult = await chipVault.settleTable(
+          this.state.tableId,
+          walletAddresses,
+          deltas
+        );
+
+        if (settleResult.success) {
+          console.log(`[settleOnBlockchain] Settled hand #${this.state.handNumber} on blockchain`);
+        } else {
+          console.error(`[settleOnBlockchain] Failed to settle: ${settleResult.error}`);
+        }
+      }
+    } catch (error) {
+      console.error('[settleOnBlockchain] Error settling on blockchain:', error);
+    }
   }
 
   // Mental Poker Methods

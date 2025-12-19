@@ -327,11 +327,42 @@ function CreateTableModal({ onClose }: { onClose: () => void }) {
   const [variant, setVariant] = useState<"texas-holdem" | "omaha">("texas-holdem");
   const [smallBlind, setSmallBlind] = useState("1");
   const [maxPlayers, setMaxPlayers] = useState(9);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCreate = () => {
-    // TODO: Implement table creation via WebSocket
-    console.log("Creating table:", { variant, smallBlind, maxPlayers });
-    onClose();
+  const handleCreate = async () => {
+    setIsCreating(true);
+    setError(null);
+
+    try {
+      const serverUrl = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3001";
+      // For now, use fetch to create table via REST API
+      // In a full implementation, this would use the WebSocket
+      const response = await fetch(`${serverUrl}/api/tables/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${variant === "texas-holdem" ? "Hold'em" : "Omaha"} - ${smallBlind}/${parseInt(smallBlind) * 2}`,
+          variant,
+          smallBlind,
+          bigBlind: String(parseInt(smallBlind) * 2),
+          minBuyIn: String(parseInt(smallBlind) * 20),
+          maxBuyIn: String(parseInt(smallBlind) * 100),
+          maxPlayers,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create table");
+      }
+
+      onClose();
+    } catch (err) {
+      console.error("Error creating table:", err);
+      setError("Failed to create table. Please try again.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -386,18 +417,26 @@ function CreateTableModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
+        {error && (
+          <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
         <div className="mt-6 flex gap-4">
           <button
             onClick={onClose}
-            className="flex-1 rounded-lg bg-gray-700 px-4 py-3 font-medium text-white transition-colors hover:bg-gray-600"
+            disabled={isCreating}
+            className="flex-1 rounded-lg bg-gray-700 px-4 py-3 font-medium text-white transition-colors hover:bg-gray-600 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
-            className="flex-1 rounded-lg bg-red-600 px-4 py-3 font-medium text-white shadow-lg transition-all hover:bg-red-500 hover:shadow-red-500/25"
+            disabled={isCreating}
+            className="flex-1 rounded-lg bg-red-600 px-4 py-3 font-medium text-white shadow-lg transition-all hover:bg-red-500 hover:shadow-red-500/25 disabled:opacity-50"
           >
-            Create Table
+            {isCreating ? "Creating..." : "Create Table"}
           </button>
         </div>
       </div>

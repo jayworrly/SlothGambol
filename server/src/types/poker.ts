@@ -20,6 +20,7 @@ export interface Player {
   isActive: boolean;
   isFolded: boolean;
   isAllIn: boolean;
+  isSittingOut: boolean;
   isDealer: boolean;
   isSmallBlind: boolean;
   isBigBlind: boolean;
@@ -195,6 +196,17 @@ export interface ClientToServerEvents {
   'table:sit-out': (callback: (response: BaseResponse) => void) => void;
   'table:sit-in': (callback: (response: BaseResponse) => void) => void;
   'table:add-chips': (data: { amount: string }, callback: (response: BaseResponse) => void) => void;
+  'table:create': (data: {
+    name?: string;
+    variant?: GameVariant;
+    smallBlind?: string;
+    bigBlind?: string;
+    minBuyIn?: string;
+    maxBuyIn?: string;
+    maxPlayers?: number;
+    timeBank?: number;
+    isPrivate?: boolean;
+  }, callback: (response: CreateTableResponse) => void) => void;
 
   // Game actions
   'game:action': (data: { action: ActionType; amount?: string }, callback: (response: ActionResponse) => void) => void;
@@ -217,6 +229,7 @@ export interface SocketData {
   playerId: string;
   walletAddress: string;
   tableId: string | null;
+  sessionId?: string; // Database session ID for tracking
 }
 
 // Response types
@@ -233,6 +246,11 @@ export interface JoinResponse extends BaseResponse {
 export interface ActionResponse extends BaseResponse {
   newChips?: string;
   pot?: string;
+}
+
+export interface CreateTableResponse extends BaseResponse {
+  tableId?: string;
+  config?: SerializedTableConfig;
 }
 
 // Serialized types (bigint -> string for JSON)

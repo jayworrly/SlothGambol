@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
   useCallback,
-  useMemo,
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAccount } from "wagmi";

@@ -188,7 +188,7 @@ const initialState: GameState = {
 };
 
 export const useGameStore = create<GameState & GameActions>()(
-  subscribeWithSelector((set, get) => ({
+  subscribeWithSelector((set) => ({
     ...initialState,
 
     setConnected: (connected) => set({ isConnected: connected }),

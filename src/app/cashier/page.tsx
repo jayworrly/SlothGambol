@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { Header } from "@/components/ui/Header";
 import { avalanche, avalancheFuji } from "wagmi/chains";
@@ -60,14 +60,28 @@ export default function CashierPage() {
   const lockedBalanceDisplay = formatBalance(lockedBalance);
 
   // Refetch balances on successful transaction
+  const prevDepositSuccess = useRef(isDepositSuccess);
+  const prevWithdrawSuccess = useRef(isWithdrawSuccess);
+
   useEffect(() => {
-    if (isDepositSuccess || isWithdrawSuccess) {
+    if ((isDepositSuccess && !prevDepositSuccess.current) ||
+        (isWithdrawSuccess && !prevWithdrawSuccess.current)) {
       refetchAvailable();
       refetchLocked();
       refetchWalletBalance();
-      setAmount("");
     }
+    prevDepositSuccess.current = isDepositSuccess;
+    prevWithdrawSuccess.current = isWithdrawSuccess;
   }, [isDepositSuccess, isWithdrawSuccess, refetchAvailable, refetchLocked, refetchWalletBalance]);
+
+  // Clear amount on successful transaction (as event handler, not in effect)
+  useEffect(() => {
+    if (isDepositSuccess || isWithdrawSuccess) {
+      // Use timeout to batch with render
+      const timer = setTimeout(() => setAmount(""), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isDepositSuccess, isWithdrawSuccess]);
 
   // Reset errors when switching tabs
   useEffect(() => {

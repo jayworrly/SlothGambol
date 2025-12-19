@@ -3,11 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useGameStore } from "@/stores/gameStore";
 import { useWebSocket } from "@/components/providers/WebSocketProvider";
-import {
-  MentalPokerGame,
-  serializeKey,
-  generateCommitment,
-} from "@/lib/mental-poker";
+import { MentalPokerGame } from "@/lib/mental-poker";
 
 /**
  * Custom hook for Mental Poker protocol integration
@@ -30,7 +26,6 @@ export function useMentalPoker() {
     isMyShuffleTurn,
     pendingKeyRequests,
     players,
-    myPosition,
     setMentalPokerEnabled,
   } = useGameStore();
 
