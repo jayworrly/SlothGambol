@@ -476,7 +476,7 @@ export function registerHandlers(io: PokerServer, socket: PokerSocket): void {
         isPrivate: isPrivate || false,
       };
 
-      const room = createTable(io, config);
+      createTable(io, config);
       console.log(`Created new table: ${config.name} (${tableId})`);
 
       callback({

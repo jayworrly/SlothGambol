@@ -207,27 +207,69 @@ export default function TablePage({ params }: TablePageProps) {
         {/* Poker Table */}
         <div className="flex flex-1 items-center justify-center p-4">
           <div className="relative aspect-[16/10] w-full max-w-5xl">
-            {/* Table Surface */}
+            {/* Table Surface - Premium Wood Rail */}
             <div
-              className="absolute inset-0 shadow-2xl"
+              className="absolute inset-0"
               style={{
-                borderRadius: "150px",
-                background: "linear-gradient(145deg, #5c4a3a, #3d3128)",
-                padding: "1.5rem",
+                borderRadius: "160px",
+                background: "linear-gradient(180deg, #5c4033 0%, #3d2817 50%, #2d1810 100%)",
+                boxShadow: "0 25px 50px rgba(0, 0, 0, 0.6), 0 10px 20px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.1)",
+                padding: "1.25rem",
               }}
             >
+              {/* Wood grain texture overlay */}
               <div
-                className="relative h-full w-full"
+                className="absolute inset-0 opacity-30 pointer-events-none"
                 style={{
-                  borderRadius: "130px",
-                  background: "linear-gradient(145deg, #1a5a3a, #0d3d25)",
-                  boxShadow: "inset 0 0 60px rgba(0,0,0,0.5)",
+                  borderRadius: "160px",
+                  background: "repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0,0,0,0.1) 20px, rgba(0,0,0,0.1) 40px)",
+                }}
+              />
+
+              {/* Inner brass/gold trim */}
+              <div
+                className="absolute inset-4"
+                style={{
+                  borderRadius: "145px",
+                  border: "3px solid transparent",
+                  background: "linear-gradient(180deg, rgba(218,165,32,0.4) 0%, rgba(139,90,43,0.6) 100%) border-box",
+                  boxShadow: "inset 0 0 10px rgba(218,165,32,0.2)",
+                }}
+              />
+
+              {/* Premium Felt Surface */}
+              <div
+                className="relative h-full w-full overflow-hidden"
+                style={{
+                  borderRadius: "140px",
+                  background: "radial-gradient(ellipse at center, #1d6b45 0%, #145534 40%, #0d3d25 80%, #092819 100%)",
+                  boxShadow: "inset 0 0 80px rgba(0, 0, 0, 0.5), inset 0 0 150px rgba(0, 0, 0, 0.3)",
                 }}
               >
-                {/* Inner rail */}
+                {/* Felt texture overlay */}
                 <div
-                  className="absolute inset-4 border-2 border-yellow-600/20"
-                  style={{ borderRadius: "110px" }}
+                  className="absolute inset-0 opacity-40 pointer-events-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")`,
+                  }}
+                />
+
+                {/* Subtle light gradient */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(255,255,255,0.05) 0%, transparent 70%)",
+                  }}
+                />
+
+                {/* Decorative inner line */}
+                <div
+                  className="absolute inset-6 pointer-events-none"
+                  style={{
+                    borderRadius: "120px",
+                    border: "1px solid rgba(218,165,32,0.15)",
+                    boxShadow: "0 0 20px rgba(218,165,32,0.05) inset",
+                  }}
                 />
               </div>
             </div>

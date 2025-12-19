@@ -54,18 +54,27 @@ export function PlayerSeat({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className={cn(
-          "relative rounded-xl p-3 transition-all min-w-[140px]",
-          isCurrentActor && "ring-2 ring-yellow-500 shadow-lg shadow-yellow-500/20",
-          isMe && !isCurrentActor && "ring-2 ring-blue-500",
-          !isCurrentActor && !isMe && "bg-gray-900/90",
-          player.isFolded && "opacity-50"
+          "relative rounded-xl p-3 transition-all min-w-[140px] backdrop-blur-sm",
+          isCurrentActor && "ring-2 ring-yellow-400 shadow-lg shadow-yellow-500/30",
+          isMe && !isCurrentActor && "ring-2 ring-purple-400",
+          player.isFolded && "opacity-40 grayscale"
         )}
         style={{
           background: isCurrentActor
-            ? "linear-gradient(145deg, rgba(234,179,8,0.2), rgba(161,98,7,0.1))"
+            ? "linear-gradient(145deg, rgba(250,204,21,0.15), rgba(161,98,7,0.1))"
             : isMe
-              ? "linear-gradient(145deg, rgba(59,130,246,0.2), rgba(29,78,216,0.1))"
-              : "rgba(17,24,39,0.9)",
+              ? "linear-gradient(145deg, rgba(139,92,246,0.2), rgba(109,40,217,0.15))"
+              : "linear-gradient(145deg, rgba(17,24,39,0.95), rgba(31,41,55,0.9))",
+          boxShadow: isCurrentActor
+            ? "0 8px 24px rgba(250,204,21,0.2), inset 0 1px 0 rgba(255,255,255,0.1)"
+            : isMe
+              ? "0 8px 24px rgba(139,92,246,0.2), inset 0 1px 0 rgba(255,255,255,0.1)"
+              : "0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
+          border: isCurrentActor
+            ? "1px solid rgba(250,204,21,0.3)"
+            : isMe
+              ? "1px solid rgba(139,92,246,0.3)"
+              : "1px solid rgba(75,85,99,0.3)",
         }}
       >
         {/* Position Badges */}
@@ -159,13 +168,13 @@ function EmptySeat({ position, style, onSeatClick }: EmptySeatProps) {
   return (
     <div className="absolute" style={style}>
       <motion.button
-        whileHover={{ scale: 1.05 }}
+        whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         onClick={onSeatClick}
-        className="flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-dashed border-gray-600 bg-gray-800/30 transition-all hover:border-green-500 hover:bg-gray-800/50"
+        className="group flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-dashed border-purple-500/30 bg-gray-900/40 backdrop-blur-sm transition-all hover:border-purple-500 hover:bg-purple-500/10 hover:shadow-lg hover:shadow-purple-500/20"
       >
-        <span className="text-2xl text-gray-500">+</span>
-        <span className="text-xs text-gray-500">Seat {position + 1}</span>
+        <span className="text-2xl text-purple-400/60 group-hover:text-purple-400 transition-colors">+</span>
+        <span className="text-xs text-gray-500 group-hover:text-purple-300 transition-colors">Seat {position + 1}</span>
       </motion.button>
     </div>
   );
@@ -183,12 +192,22 @@ function PlayerAvatar({ username, walletAddress, isMe }: PlayerAvatarProps) {
   return (
     <div
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white shadow-inner",
+        "relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white",
         isMe
-          ? "bg-gradient-to-br from-blue-500 to-blue-700"
-          : "bg-gradient-to-br from-red-500 to-red-700"
+          ? "bg-gradient-to-br from-purple-500 to-violet-600"
+          : "bg-gradient-to-br from-gray-600 to-gray-700"
       )}
+      style={{
+        boxShadow: isMe
+          ? "0 4px 12px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.2)"
+          : "0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+      }}
     >
+      {/* Ring border */}
+      <div className={cn(
+        "absolute inset-0 rounded-full border-2",
+        isMe ? "border-purple-300/40" : "border-gray-400/20"
+      )} />
       {initials}
     </div>
   );
@@ -197,9 +216,15 @@ function PlayerAvatar({ username, walletAddress, isMe }: PlayerAvatarProps) {
 function DealerButton() {
   return (
     <motion.div
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-bold text-black shadow-lg"
+      initial={{ scale: 0, rotate: -180 }}
+      animate={{ scale: 1, rotate: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-gray-900"
+      style={{
+        background: "linear-gradient(180deg, #FFFFFF 0%, #E5E5E5 100%)",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 2px rgba(0,0,0,0.1)",
+        border: "2px solid #DAA520",
+      }}
     >
       D
     </motion.div>
@@ -210,9 +235,16 @@ function BlindBadge({ type }: { type: "SB" | "BB" }) {
   return (
     <span
       className={cn(
-        "rounded px-1.5 py-0.5 text-[10px] font-bold",
-        type === "SB" ? "bg-blue-600 text-white" : "bg-yellow-500 text-black"
+        "rounded-md px-1.5 py-0.5 text-[10px] font-bold shadow-sm",
+        type === "SB"
+          ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white"
+          : "bg-gradient-to-b from-yellow-400 to-yellow-500 text-gray-900"
       )}
+      style={{
+        boxShadow: type === "SB"
+          ? "0 2px 4px rgba(59,130,246,0.4)"
+          : "0 2px 4px rgba(234,179,8,0.4)",
+      }}
     >
       {type}
     </span>
@@ -224,14 +256,53 @@ interface ChipStackProps {
 }
 
 function ChipStack({ amount }: ChipStackProps) {
+  // Determine chip color based on bet size
+  const getChipColor = (amt: bigint) => {
+    const value = Number(amt);
+    if (value >= 100) return { from: "#8B5CF6", to: "#6D28D9", border: "#A78BFA" }; // Purple - high
+    if (value >= 25) return { from: "#EF4444", to: "#B91C1C", border: "#F87171" }; // Red - medium
+    if (value >= 5) return { from: "#22C55E", to: "#15803D", border: "#4ADE80" }; // Green - low
+    return { from: "#3B82F6", to: "#1D4ED8", border: "#60A5FA" }; // Blue - micro
+  };
+
+  const colors = getChipColor(amount);
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       <div className="relative">
-        {/* Stack of chips visual */}
-        <div className="h-4 w-4 rounded-full bg-gradient-to-b from-yellow-400 to-yellow-600 shadow" />
-        <div className="absolute -bottom-0.5 left-0.5 h-4 w-4 rounded-full bg-gradient-to-b from-yellow-500 to-yellow-700 shadow" />
+        {/* Stacked chips with 3D effect */}
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: "18px",
+              height: "18px",
+              background: `linear-gradient(180deg, ${colors.from} 0%, ${colors.to} 100%)`,
+              boxShadow: `0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)`,
+              border: `1.5px dashed ${colors.border}40`,
+              top: `${-i * 3}px`,
+              left: `${i * 0.5}px`,
+            }}
+          />
+        ))}
+        {/* Top chip visible layer */}
+        <div
+          className="relative rounded-full"
+          style={{
+            width: "18px",
+            height: "18px",
+            background: `linear-gradient(180deg, ${colors.from} 0%, ${colors.to} 100%)`,
+            boxShadow: `0 3px 6px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.3)`,
+            border: `1.5px dashed ${colors.border}60`,
+            top: "-9px",
+            left: "1.5px",
+          }}
+        />
       </div>
-      <span className="rounded bg-black/80 px-2 py-0.5 text-xs font-bold text-yellow-400">
+      <span className="rounded-md bg-black/90 px-2 py-0.5 text-xs font-bold text-white shadow-lg"
+        style={{ marginLeft: "8px" }}
+      >
         {formatChips(amount)}
       </span>
     </div>

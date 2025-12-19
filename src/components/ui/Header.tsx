@@ -50,10 +50,10 @@ export function Header() {
                 Profile
               </Link>
               <Link
-                href="/cashier"
+                href="/faucet"
                 className="text-foreground/60 hover:text-foreground transition-colors"
               >
-                Cashier
+                Faucet
               </Link>
             </nav>
           )}

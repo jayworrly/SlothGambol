@@ -2,7 +2,6 @@ import {
   createPublicClient,
   createWalletClient,
   http,
-  parseEther,
   formatEther,
   type PublicClient,
   type WalletClient,
@@ -292,6 +291,7 @@ class ChipVaultService {
         abi: ChipVaultABI,
         functionName: 'lockChips',
         args: [playerAddress, amount, tableIdBytes32],
+        chain: this.chain,
       });
 
       // Wait for confirmation
@@ -328,6 +328,7 @@ class ChipVaultService {
         abi: ChipVaultABI,
         functionName: 'unlockChips',
         args: [playerAddress, amount, tableIdBytes32],
+        chain: this.chain,
       });
 
       // Wait for confirmation
@@ -377,6 +378,7 @@ class ChipVaultService {
         abi: ChipVaultABI,
         functionName: 'settleTable',
         args: [tableIdBytes32, players, deltas],
+        chain: this.chain,
       });
 
       // Wait for confirmation
