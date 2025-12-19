@@ -6,6 +6,7 @@ import {
   type PublicClient,
   type WalletClient,
   type Chain,
+  type Account,
   keccak256,
   toBytes,
 } from 'viem';
@@ -113,6 +114,7 @@ class ChipVaultService {
   private chain: Chain | null = null;
   private initialized = false;
   private serverAddress: `0x${string}` | null = null;
+  private account: Account | null = null;
 
   initialize(config?: ChipVaultServiceConfig): boolean {
     const chainId = config?.chainId || parseInt(process.env.CHAIN_ID || '43113');
@@ -142,11 +144,11 @@ class ChipVaultService {
         const formattedKey = privateKey.startsWith('0x')
           ? privateKey as `0x${string}`
           : `0x${privateKey}` as `0x${string}`;
-        const account = privateKeyToAccount(formattedKey);
-        this.serverAddress = account.address;
+        this.account = privateKeyToAccount(formattedKey);
+        this.serverAddress = this.account.address;
 
         this.walletClient = createWalletClient({
-          account,
+          account: this.account,
           chain: this.chain,
           transport,
         });
@@ -292,6 +294,7 @@ class ChipVaultService {
         functionName: 'lockChips',
         args: [playerAddress, amount, tableIdBytes32],
         chain: this.chain,
+        account: this.account!,
       });
 
       // Wait for confirmation
@@ -329,6 +332,7 @@ class ChipVaultService {
         functionName: 'unlockChips',
         args: [playerAddress, amount, tableIdBytes32],
         chain: this.chain,
+        account: this.account!,
       });
 
       // Wait for confirmation
@@ -379,6 +383,7 @@ class ChipVaultService {
         functionName: 'settleTable',
         args: [tableIdBytes32, players, deltas],
         chain: this.chain,
+        account: this.account!,
       });
 
       // Wait for confirmation
