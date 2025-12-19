@@ -29,34 +29,42 @@ export function Header() {
             </span>
           </Link>
 
-          {authenticated && (
-            <nav className="hidden items-center gap-6 md:flex">
-              <Link
-                href="/lobby"
-                className="text-foreground/60 hover:text-foreground transition-colors"
-              >
-                Lobby
-              </Link>
-              <Link
-                href="/tournaments"
-                className="text-foreground/60 hover:text-foreground transition-colors"
-              >
-                Tournaments
-              </Link>
-              <Link
-                href="/profile"
-                className="text-foreground/60 hover:text-foreground transition-colors"
-              >
-                Profile
-              </Link>
-              <Link
-                href="/faucet"
-                className="text-foreground/60 hover:text-foreground transition-colors"
-              >
-                Faucet
-              </Link>
-            </nav>
-          )}
+          <nav className="hidden items-center gap-6 md:flex">
+            {authenticated && (
+              <>
+                <Link
+                  href="/lobby"
+                  className="text-foreground/60 hover:text-foreground transition-colors"
+                >
+                  Lobby
+                </Link>
+                <Link
+                  href="/tournaments"
+                  className="text-foreground/60 hover:text-foreground transition-colors"
+                >
+                  Tournaments
+                </Link>
+                <Link
+                  href="/profile"
+                  className="text-foreground/60 hover:text-foreground transition-colors"
+                >
+                  Profile
+                </Link>
+                <Link
+                  href="/faucet"
+                  className="text-foreground/60 hover:text-foreground transition-colors"
+                >
+                  Faucet
+                </Link>
+              </>
+            )}
+            <Link
+              href="/docs"
+              className="text-foreground/60 hover:text-foreground transition-colors"
+            >
+              Docs
+            </Link>
+          </nav>
         </div>
 
         {/* Auth Button */}

@@ -342,10 +342,15 @@ export default function Home() {
               </span>
             </div>
             <div className="text-foreground/60 flex items-center gap-8 text-sm">
-              <a href="#" className="hover:text-purple-400 transition-colors">
+              <Link href="/docs" className="hover:text-purple-400 transition-colors">
                 Docs
-              </a>
-              <a href="#" className="hover:text-purple-400 transition-colors">
+              </Link>
+              <a
+                href="https://github.com/jayworrly/SlothGambol"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-purple-400 transition-colors"
+              >
                 GitHub
               </a>
               <a href="#" className="hover:text-purple-400 transition-colors">
