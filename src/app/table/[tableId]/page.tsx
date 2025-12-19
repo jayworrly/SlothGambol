@@ -22,6 +22,7 @@ import {
   MentalPokerStatus,
   MentalPokerBadge,
   PotDisplay,
+  TableChat,
 } from "@/components/game";
 import { useMentalPoker } from "@/hooks/useMentalPoker";
 import { cn } from "@/lib/utils";
@@ -302,6 +303,9 @@ export default function TablePage({ params }: TablePageProps) {
           </div>
         )}
       </main>
+
+      {/* Table Chat */}
+      {isSeated && <TableChat />}
 
       {/* Mental Poker Status Panel */}
       <MentalPokerStatus

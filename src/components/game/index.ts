@@ -42,3 +42,6 @@ export {
   PotDisplay,
   PotUpdateAnimation,
 } from "./PotDisplay";
+
+// Table chat
+export { TableChat } from "./TableChat";

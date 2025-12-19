@@ -449,6 +449,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on("table:chat", (data) => {
       console.log(`[Chat] ${data.playerId}: ${data.message}`);
+      gameStore.addMessage(data.playerId, data.message);
     });
 
     // Mental Poker event handlers
